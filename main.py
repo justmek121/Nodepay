@@ -5,15 +5,24 @@ import subprocess
 import random
 import time
 import logging
+from flask import Flask
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import threading
+
+app = Flask(__name__)
+port = int(os.environ.get("PORT", 10000))
 
 def setup_logging():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+@app.route('/')
+def hello_world():
+    return 'Hello World!'
 
 def connection_status(driver):
     if wait_for_element_exists(driver, By.XPATH, "//*[text()='Connected']"):
@@ -83,7 +92,7 @@ def get_os_info():
         logging.error(f"Could not get OS information: {e}")
         return "Unknown OS"
 
-def run():
+def run_selenium():
     setup_logging()
     
     branch = ''
@@ -103,7 +112,7 @@ def run():
         # Check if credentials are provided
         if not cookie:
             logging.error('No cookie provided. Please set the NP_COOKIE environment variable.')
-            return  # Exit the script if credentials are not provided
+            return
 
         chrome_options = Options()
         chrome_options.add_extension(f'./{extension_id}.crx')
@@ -120,20 +129,16 @@ def run():
         logging.error(f'An error occurred: {e}')
         logging.error(f'Restarting in 60 seconds...')
         time.sleep(secUntilRestart)
-        run()
+        run_selenium()
 
     try:
-        # NodePass checks for width less than 1024p
         driver.set_window_size(1024, driver.get_window_size()['height'])
-
-        # Navigate to a webpage
         logging.info(f'Navigating to {extension_url} website...')
         driver.get(extension_url)
         time.sleep(random.randint(3,7))
 
         add_cookie_to_local_storage(driver, cookie)
 
-        # Check successful login
         while not wait_for_element_exists(driver, By.XPATH, "//*[text()='Dashboard']"):
             logging.info(f'Refreshing in {secUntilRestart} seconds to check login (If stuck, verify your token)...')
             driver.get(extension_url)
@@ -145,39 +150,29 @@ def run():
         driver.get(f'chrome-extension://{extension_id}/index.html')
         time.sleep(random.randint(3,7))
 
-        # Refresh until the "Login" button disappears
         while wait_for_element_exists(driver, By.XPATH, "//*[text()='Login']"):
-            logging.info('Clicking the extension login button...')
             login = driver.find_element(By.XPATH, "//*[text()='Login']")
             login.click()
             time.sleep(10)
-            # Refresh the page
             driver.refresh()
 
-        # Check for the "Activated" element
-
-        # Get handles for all windows
+        check_active_element(driver)
         all_windows = driver.window_handles
-
-        # Get the handle of the active window
         active_window = driver.current_window_handle
 
-        # Close all windows except the active one
         for window in all_windows:
             if window != active_window:
                 driver.switch_to.window(window)
                 driver.close()
 
-        # Switch back to the active window
         driver.switch_to.window(active_window)
-
         connection_status(driver)
     except Exception as e:
         logging.error(f'An error occurred: {e}')
         logging.error(f'Restarting in {secUntilRestart} seconds...')
         driver.quit()
         time.sleep(secUntilRestart)
-        run()
+        run_selenium()
 
     while True:
         try:
@@ -189,4 +184,8 @@ def run():
             driver.quit()
             break
 
-run()
+# Run Flask app in a separate thread
+threading.Thread(target=lambda: app.run(host='0.0.0.0', port=port)).start()
+
+# Run the Selenium function
+run_selenium()
