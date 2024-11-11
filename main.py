@@ -156,7 +156,6 @@ def run_selenium():
             time.sleep(10)
             driver.refresh()
 
-        check_active_element(driver)
         all_windows = driver.window_handles
         active_window = driver.current_window_handle
 
