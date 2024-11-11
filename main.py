@@ -155,7 +155,6 @@ def run():
             driver.refresh()
 
         # Check for the "Activated" element
-        check_active_element(driver)
 
         # Get handles for all windows
         all_windows = driver.window_handles
