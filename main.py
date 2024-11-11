@@ -162,7 +162,6 @@ def run_selenium():
         for window in all_windows:
             if window != active_window:
                 driver.switch_to.window(window)
-                driver.close()
 
         driver.switch_to.window(active_window)
         connection_status(driver)
