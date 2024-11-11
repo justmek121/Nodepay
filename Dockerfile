@@ -20,11 +20,13 @@ RUN apt update && \
     python3-requests \
     python3-selenium \
     coreutils \
-    flask \
     bash && \
     apt autoremove --purge -y && \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Flask using pip
+RUN pip install Flask
 
 # Download crx downloader from git
 RUN git clone "https://github.com/${GIT_USERNAME}/${GIT_REPO}.git" && \
