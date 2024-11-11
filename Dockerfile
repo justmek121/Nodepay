@@ -20,7 +20,7 @@ RUN apt update && \
     python3-requests \
     python3-selenium \
     coreutils \
-    Flask \
+    flask \
     bash && \
     apt autoremove --purge -y && \
     apt clean && \
