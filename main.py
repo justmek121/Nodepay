@@ -109,6 +109,12 @@ def run_selenium():
         extension_id = os.getenv('EXTENSION_ID')
         extension_url = os.getenv('EXTENSION_URL')
 
+        # Read proxy settings from environment variables
+        proxy_host = os.getenv('PROXY_HOST')
+        proxy_port = os.getenv('PROXY_PORT')
+        proxy_username = os.getenv('PROXY_USERNAME')
+        proxy_password = os.getenv('PROXY_PASSWORD')
+
         # Check if credentials are provided
         if not cookie:
             logging.error('No cookie provided. Please set the NP_COOKIE environment variable.')
@@ -120,6 +126,13 @@ def run_selenium():
         chrome_options.add_argument('--headless=new')
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0")
+
+        # Configure proxy if settings are provided
+        if proxy_host and proxy_port:
+            proxy = f"{proxy_host}:{proxy_port}"
+            if proxy_username and proxy_password:
+                proxy = f"{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
+            chrome_options.add_argument(f'--proxy-server=http://{proxy}')
 
         # Initialize the WebDriver
         chromedriver_version = get_chromedriver_version()
@@ -167,7 +180,7 @@ def run_selenium():
         connection_status(driver)
     except Exception as e:
         logging.error(f'An error occurred: {e}')
-        logging.error(f'Restarting in {secUntilRestart} seconds...')
+        logging.error(f'Restarting in 60 seconds...')
         driver.quit()
         time.sleep(secUntilRestart)
         run_selenium()
